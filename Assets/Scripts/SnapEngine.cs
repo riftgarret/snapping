@@ -94,7 +94,7 @@ public class SnapEngine
         {
             if (Selection.activeTransform && snapState.IsValidGameObject(Selection.activeGameObject))
             {
-                snapState.TrackActiveGameObject(Selection.activeGameObject);
+                snapState.TrackGameObject(Selection.activeGameObject);
             }
         }
 
@@ -122,7 +122,7 @@ public class SnapEngine
 
                 if (Selection.activeTransform && snapState.IsValidGameObject(Selection.activeGameObject))
                 {
-                    snapState.TrackActiveGameObject(Selection.activeGameObject);
+                    snapState.TrackGameObject(Selection.activeGameObject);
                 }
 
                 break;

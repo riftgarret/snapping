@@ -11,7 +11,7 @@ class SnapState
 
     public bool IsTracking { get { return gameObject != null; } }
 
-    public void TrackActiveGameObject(GameObject gameObject)
+    public void TrackGameObject(GameObject gameObject)
     {        
         Log("OnSceneGUI: active transform");
         this.gameObject = gameObject;
