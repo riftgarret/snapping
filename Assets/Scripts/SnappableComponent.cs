@@ -17,6 +17,10 @@ public class SnappableComponent : MonoBehaviour
     void Start()
     {
         //gameObject.GetComponent<MeshRenderer>().enabled = false;
+        if(GetComponent<SphereCollider>() == null)
+        {
+            gameObject.AddComponent<SphereCollider>();
+        }
     }
 
     void OnDrawGizmos()
@@ -27,9 +31,14 @@ public class SnappableComponent : MonoBehaviour
         }
 
         Gizmos.color = boxColor;
-        Gizmos.DrawWireCube(transform.position, transform.localScale);
+        Gizmos.DrawWireSphere(transform.position, 1);
 
         Gizmos.color = Color.blue;                
         DrawArrow.ForGizmo(transform.position, transform.forward);                
+    }
+
+    void OnCollisionEnter(Collider collider)
+    {
+        Debug.Log("Testing");
     }
 }

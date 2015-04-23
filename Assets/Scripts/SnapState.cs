@@ -3,6 +3,10 @@ using UnityEditor;
 
 class SnapState
 {
+
+    private float distanceThreshold = 2;
+    private float angleThreshold = 30f;
+
     private Vector3 lastPosition = Vector3.zero;
     private Transform transform;
     private GameObject gameObject;
@@ -63,12 +67,16 @@ class SnapState
         }        
     }
 
+    private void testCollsion(SnappableComponent source)
+    {
+        
+    }
+
     private SnappableComponent GetSnappable(SnappableComponent source, SnappableComponent[] targets)
     {
-        Vector3 sourcePos = GetAdjustedPositionToSnap(source.transform, true);
-        float distanceThreshold = source.gameObject.transform.lossyScale.magnitude / 2f;
+        Vector3 sourcePos = source.transform.position;        
         float distanceMin = int.MaxValue;
-        float angleThreshold = 30f;
+        
         // TODO optimize
         SnappableComponent found = null;
 
@@ -103,37 +111,22 @@ class SnapState
     {        
         Transform sourceTransform = source.transform;
         Transform targetTransform = target.transform;
-        
-        Vector3 targetPosition = GetAdjustedPositionToSnap(targetTransform, false);
+
+        Log("pos1: " + sourceTransform.position);
+
+        // first adjust rotation, this can adjust position
+        this.transform.rotation *= Quaternion.Inverse(this.transform.rotation) * sourceTransform.localRotation * targetTransform.rotation * Quaternion.AngleAxis(180, Vector3.up);
+
+        Log("pos2: " + sourceTransform.position);
+        Vector3 targetPosition = targetTransform.position;
 
         Vector3 deltaPosition = targetPosition - sourceTransform.position;
-
-        //float angle = Vector3.Angle(-targetTransform.forward, sourceTransform.forward);
         
-        //Quaternion.FromToRotation(targetTransform.forward, sourceTransform.forward)
-        
-
-        Vector3 deltaUp = targetTransform.up - sourceTransform.up;        
-        Vector3 deltaForward = targetTransform.forward + sourceTransform.forward;
-
-        
-
         this.transform.position += deltaPosition;
-        this.transform.Rotate(Quaternion.FromToRotation(targetTransform.forward, sourceTransform.forward).eulerAngles / 2);
-        //this.transform.forward += deltaForward;
-        //transform.up += deltaUp;
+
+        Log("pos3: " + sourceTransform.position + " , t: " + targetTransform.position);
     }
 
-
-
-
-
-    private Vector3 GetAdjustedPositionToSnap(Transform transform, bool isSource)
-    {
-        Vector3 pos = transform.position;        
-        //pos.z += transform.lossyScale.z * (isSource ? -1 : 1);
-        return pos;
-    }
 
     private bool IsWithinDistanceThreshold(float distance, float distanceThreshold)
     {
