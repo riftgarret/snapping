@@ -37,8 +37,19 @@ public class SnappableComponent : MonoBehaviour
         DrawArrow.ForGizmo(transform.position, transform.forward);                
     }
 
-    void OnCollisionEnter(Collider collider)
+    public void SnapTo(SnappableComponent target, GameObject sourceRoot)
     {
-        Debug.Log("Testing");
+        Transform rootTransform = sourceRoot.transform;
+        Transform sourceTransform = transform;
+        Transform targetTransform = target.transform;
+
+        // first adjust rotation, this can adjust position
+        rootTransform.rotation *= Quaternion.Inverse(rootTransform.rotation) * sourceTransform.localRotation * targetTransform.rotation * Quaternion.AngleAxis(180, Vector3.up);
+        
+        // adjust position after rotate
+        Vector3 targetPosition = targetTransform.position;
+        Vector3 deltaPosition = targetPosition - sourceTransform.position;
+
+        rootTransform.position += deltaPosition;
     }
 }

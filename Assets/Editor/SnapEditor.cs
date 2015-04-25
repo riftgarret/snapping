@@ -16,6 +16,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections;
 using System.Reflection;
+using snaptest;
 
 
 [System.Serializable]
@@ -23,11 +24,12 @@ public class SnapEditor : EditorWindow
 {
 
     private GUIContent gc_SnapEnabled = new GUIContent("Enable", "Toggles snapping on or off.");
+    private GUIContent gc_RunTests = new GUIContent("Run Tests", "Run unit tests.");
 
     [MenuItem("Tools/Modular Snap/Snap Window", false, 15)]
     public static void InitSnapWindow()
     {
-        EditorWindow.GetWindow(typeof(SnapEditor), false, "PG", true).autoRepaintOnSceneChange = true;
+        EditorWindow.GetWindow(typeof(SnapEditor), false, "SM", true).autoRepaintOnSceneChange = true;
         SceneView.RepaintAll();
 
     }
@@ -35,8 +37,19 @@ public class SnapEditor : EditorWindow
 
     void OnGUI()
     {
+        EditorGUILayout.BeginVertical();
+
         bool enable = EditorGUILayout.Toggle(gc_SnapEnabled, SnapEngine.Instance.IsEnabled);
         SnapEngine.Instance.IsEnabled = enable;
 
+        if (GUILayout.Button(gc_RunTests))
+        {
+            SnapTestSuite test = new SnapTestSuite();
+            test.testAll();
+        }
+
+        EditorGUILayout.EndVertical();
     }
+
+
 }

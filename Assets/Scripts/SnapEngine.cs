@@ -89,19 +89,31 @@ public class SnapEngine
         // only track single selections
 
         // Always keep track of the selection
+        Transform[] transforms = Selection.transforms;
+        if(transforms == null || transforms.Length == 0)
+        {
+            return;
+        }
+
+        Transform activeTransform = Selection.activeTransform;
+        if(!activeTransform)
+        {
+            return;
+        }
+
 
         if (snapState.IsNewTransform(Selection.transforms))
         {
             if (Selection.activeTransform && snapState.IsValidGameObject(Selection.activeGameObject))
             {
-                snapState.TrackActiveGameObject(Selection.activeGameObject);
+                snapState.TrackGameObject(Selection.activeGameObject);
             }
         }
 
 
 
         // Snapping
-        if (Selection.activeTransform && snapState.IsTracking && snapState.IsNewPosition)
+        if (Selection.activeTransform && snapState.IsTracking && snapState.IsNewPosition(Selection.activeTransform))
         {
             snapState.UpdateTracking(Selection.activeTransform);
             snapState.SnapIfAble();            
@@ -122,7 +134,7 @@ public class SnapEngine
 
                 if (Selection.activeTransform && snapState.IsValidGameObject(Selection.activeGameObject))
                 {
-                    snapState.TrackActiveGameObject(Selection.activeGameObject);
+                    snapState.TrackGameObject(Selection.activeGameObject);
                 }
 
                 break;

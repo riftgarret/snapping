@@ -4,140 +4,68 @@ using UnityEditor;
 class SnapState
 {
 
-    private float distanceThreshold = 2;
-    private float angleThreshold = 30f;
-
-    private Vector3 lastPosition = Vector3.zero;
-    private Transform transform;
+    private SnapSearchStrategy searchStrategy = new SnapSearchStrategy();
+    private SnapDatabase filter = new SnapDatabase();
+    private SnapTransformTracker transformTracker = new SnapTransformTracker();
+    private SnapPartion partition;
+        
     private GameObject gameObject;
-    private SnappableComponent[] targetComponents;
-    private SnappableComponent[] sourceComponent;    
 
-    public bool IsTracking { get { return gameObject != null; } }
+    public bool IsTracking { get { return transformTracker.IsTracking; } }
 
-    public void TrackActiveGameObject(GameObject gameObject)
+    public void TrackGameObject(GameObject gameObject)
     {        
         Log("OnSceneGUI: active transform");
         this.gameObject = gameObject;
-        transform = gameObject.transform;
-        lastPosition = transform.position;        
-        sourceComponent = gameObject.GetComponentsInChildren<SnappableComponent>();
-        targetComponents = FindSnappableGameObjects(gameObject);
+        transformTracker.ActiveTransform = gameObject.transform;
+        partition = SnapPartion.Partition(gameObject);
+        filter.ResetTargets(partition.targets);                
     }
-
-    private SnappableComponent[] FindSnappableGameObjects(GameObject curObject)
-    {
-        // all from parent        
-        SnappableComponent[] foundComponents = curObject.transform.parent.gameObject.GetComponentsInChildren<SnappableComponent>();
-
-        // remove self
-        foreach (SnappableComponent curComponent in curObject.GetComponents<SnappableComponent>())
-        {
-            ArrayUtility.Remove(ref foundComponents, curComponent);
-        }
-
-        return foundComponents;
-    }
-
    
     public void UpdateTracking(Transform transform)
     {
-        // not the transform we are tracking
-        if(transform != this.transform)
-        {
-            return;
-        }
-
-        // position hasnt changed, ignore
-        if(transform.position == this.lastPosition)
-        {
-            return;
-        }
-
-        this.lastPosition = transform.position;        
+        transformTracker.UpdateTracking(transform);        
     }
 
     public void SnapIfAble()
     {
-        SnappableComponent target = GetSnappable(sourceComponent[0], targetComponents);
-
-        if(target != null)
+        // temp until optimized
+        float curMin = int.MaxValue;
+        SearchResult closestResult = null;
+        foreach (SnappableComponent source in partition.sources)
         {
-            Snap(sourceComponent[0], target);
-        }        
-    }
-
-    private void testCollsion(SnappableComponent source)
-    {
-        
-    }
-
-    private SnappableComponent GetSnappable(SnappableComponent source, SnappableComponent[] targets)
-    {
-        Vector3 sourcePos = source.transform.position;        
-        float distanceMin = int.MaxValue;
-        
-        // TODO optimize
-        SnappableComponent found = null;
-
-        foreach (SnappableComponent target in targets)
-        {
-            float distance = Vector3.Distance(target.gameObject.transform.position, sourcePos);
-
-            if (IsWithinDistanceThreshold(distance, distanceThreshold)
-                && distanceMin > distance
-                && IsWithinDirectionThreshold(source.transform, target.transform, angleThreshold))
-            {
-                distanceMin = distance;
-                found = target;
+            SnappableComponent[] filteredTargets = filter.GetTargets(source);
+            SearchResult found = searchStrategy.FindClosest(source, filteredTargets, curMin);
+            
+            // if we have no result or its closer, replace closest
+            if(found != null && (closestResult == null || found.min < closestResult.min))
+            {                                               
+                closestResult = found;
+                curMin = closestResult.min;
             }
-        }
-
-        return found;
+        }                
+               
+        // if we have a result lets snap
+        if(closestResult != null)
+        {
+            Snap(closestResult.source, closestResult.target);
+        }        
     }
 
     public bool IsNewTransform(Transform[] transforms)
     {
-        return transforms.Length == 1 && transforms[0] != transform;
+        return transformTracker.IsNewTransform(transforms[0]);
     }
 
-    public bool IsNewPosition
+    public bool IsNewPosition(Transform transform)
     {
-        get { return transform.position != lastPosition; }
+        return transformTracker.HasTransformChanged(transform); 
     }
 
 
     private void Snap(SnappableComponent source, SnappableComponent target)
-    {        
-        Transform sourceTransform = source.transform;
-        Transform targetTransform = target.transform;
-
-        Log("pos1: " + sourceTransform.position);
-
-        // first adjust rotation, this can adjust position
-        this.transform.rotation *= Quaternion.Inverse(this.transform.rotation) * sourceTransform.localRotation * targetTransform.rotation * Quaternion.AngleAxis(180, Vector3.up);
-
-        Log("pos2: " + sourceTransform.position);
-        Vector3 targetPosition = targetTransform.position;
-
-        Vector3 deltaPosition = targetPosition - sourceTransform.position;
-        
-        this.transform.position += deltaPosition;
-
-        Log("pos3: " + sourceTransform.position + " , t: " + targetTransform.position);
-    }
-
-
-    private bool IsWithinDistanceThreshold(float distance, float distanceThreshold)
     {
-        return distance <= distanceThreshold;
-    }
-
-    private bool IsWithinDirectionThreshold(Transform source, Transform target, float thresholdInDegrees)
-    {
-        // our logic is that they are both up, and they point towards each other, we use forward
-        return Vector3.Angle(source.up, target.up) <= thresholdInDegrees
-           && Vector3.Angle(source.forward, -target.forward) <= thresholdInDegrees;
+        source.SnapTo(target, gameObject);
     }
 
     public bool IsValidGameObject(GameObject gameObject)
